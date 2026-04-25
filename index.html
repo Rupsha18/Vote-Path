@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="VotePath — Your interactive AI-powered election guide. Learn the voting process, bust myths, and explore civic education in a gamified experience.">
+  <title>VotePath — Your Election Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar" id="navbar" aria-label="Main navigation">
+  <div class="navbar-inner">
+    <a href="#" class="nav-logo">Vote<span>Path</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#journey">Journey Map</a></li>
+      <li><a href="#myths">Myth Buster</a></li>
+      <li><a href="#process">Process</a></li>
+      <li><a href="#simulator">Simulator</a></li>
+      <li><a href="#deadlines">Deadlines</a></li>
+    </ul>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Toggle navigation menu">☰</button>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+  <div class="hero-bg" aria-hidden="true" id="heroBg"></div>
+  <div class="hero-content fade-in">
+    <h1><span class="gold">Your Vote.</span> Your Voice. <span class="gold">Your Guide.</span></h1>
+    <p style="color:var(--text-muted);font-size:1.15rem;max-width:560px;margin:0 auto;">Navigate every step of the election process with confidence. VotePath is your personal civics companion.</p>
+    <div class="hero-countdown" id="heroCountdown">
+      <div class="countdown-unit"><span class="num" id="cdDays">00</span><span class="lbl">Days</span></div>
+      <div class="countdown-unit"><span class="num" id="cdHours">00</span><span class="lbl">Hours</span></div>
+      <div class="countdown-unit"><span class="num" id="cdMins">00</span><span class="lbl">Minutes</span></div>
+      <div class="countdown-unit"><span class="num" id="cdSecs">00</span><span class="lbl">Seconds</span></div>
+    </div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:8px;">Until Next Major Election Event</p>
+    <a href="#journey" class="cta-btn" aria-label="Start your voter journey">Start My Journey</a>
+  </div>
+</section>
+
+<!-- ===== JOURNEY MAP ===== -->
+<section class="journey-section" id="journey">
+  <div class="section-heading fade-in">
+    <h2>Your Voter Journey Map</h2>
+    <p>Seven steps to making your voice heard. Click each step to learn more.</p>
+  </div>
+  <div class="geo-divider"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="journey-timeline" id="journeyTimeline" role="list" aria-label="Voter journey steps"></div>
+</section>
+
+<!-- ===== MYTH BUSTER ===== -->
+<section class="myth-section" id="myths">
+  <div class="myth-inner">
+    <div class="section-heading fade-in">
+      <h2>Election Myth Buster</h2>
+      <p>Separate fact from fiction. Enter a myth or click one below.</p>
+    </div>
+    <div class="geo-divider"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="myth-input-wrap fade-in">
+      <input type="text" class="myth-input" id="mythInput" placeholder="Type an election myth or rumour you've heard..." aria-label="Enter an election myth">
+      <button class="myth-submit-btn" id="mythSubmitBtn" aria-label="Check this myth">Check Myth</button>
+    </div>
+    <div class="myth-cards" id="mythCards"></div>
+  </div>
+</section>
+
+<!-- ===== PROCESS VISUALISER ===== -->
+<section class="process-section" id="process">
+  <div class="section-heading fade-in">
+    <h2>The Life of Your Vote</h2>
+    <p>Follow your ballot from the moment you cast it to the final certification.</p>
+  </div>
+  <div class="geo-divider"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="process-svg-wrap fade-in" id="processWrap">
+    <svg id="processSvg" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vote lifecycle infographic"></svg>
+    <div class="process-tooltip" id="processTooltip"></div>
+  </div>
+  <button class="animate-process-btn" id="animateBtn" aria-label="Animate the vote journey">▶ Animate the Journey</button>
+</section>
+
+<!-- ===== VOTING SIMULATOR ===== -->
+<section class="simulator-section" id="simulator">
+  <div class="sim-inner">
+    <div class="section-heading fade-in">
+      <h2>Voting Systems Simulator</h2>
+      <p>See how the same votes produce different winners under different systems.</p>
+    </div>
+    <div class="geo-divider"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="sim-candidates fade-in" id="simCandidates"></div>
+    <div class="sim-results fade-in" id="simResults"></div>
+  </div>
+</section>
+
+<!-- ===== DEADLINE TRACKER ===== -->
+<section class="deadline-section" id="deadlines">
+  <div class="section-heading fade-in">
+    <h2>Smart Deadline Tracker</h2>
+    <p>Never miss a crucial election deadline. Stay informed and stay prepared.</p>
+  </div>
+  <div class="geo-divider"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="deadline-grid fade-in" id="deadlineGrid"></div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer" id="footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h4>About VotePath</h4>
+      <p>VotePath is an interactive civic education tool designed to empower every citizen with the knowledge and confidence to participate in democracy. Built with care and accuracy to serve voters of all backgrounds.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Navigate</h4>
+      <ul>
+        <li><a href="#journey">Journey Map</a></li>
+        <li><a href="#myths">Myth Buster</a></li>
+        <li><a href="#process">Vote Process</a></li>
+        <li><a href="#simulator">Simulator</a></li>
+        <li><a href="#deadlines">Deadlines</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Accessibility</h4>
+      <p>VotePath is committed to digital accessibility. This application meets WCAG 2.1 AA standards, with ARIA labels on all interactive elements, keyboard navigation support, and sufficient color contrast throughout.</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 VotePath. An open civic technology project.</p>
+    <div class="powered-badge">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#C9A84C" stroke-width="2"/><path d="M12 6l1.5 3.5L17 11l-3.5 1.5L12 16l-1.5-3.5L7 11l3.5-1.5L12 6z" fill="#C9A84C"/></svg>
+      Powered by Anthropic Claude
+    </div>
+  </div>
+</footer>
+
+<!-- ===== CHAT TOGGLE ===== -->
+<button class="chat-toggle" id="chatToggle" aria-label="Open AI civics coach Vox">
+  <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+    <path d="M8 6h24a2 2 0 012 2v16a2 2 0 01-2 2H16l-6 6v-6H8a2 2 0 01-2-2V8a2 2 0 012-2z" fill="#0A1628"/>
+    <path d="M20 12l1.5 3 3.5 1-3.5 1L20 20l-1.5-3L15 16l3.5-1L20 12z" fill="#C9A84C"/>
+  </svg>
+</button>
+
+<!-- ===== CHAT PANEL ===== -->
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="AI Civics Coach Vox">
+  <div class="chat-header">
+    <svg class="vox-avatar" width="36" height="36" viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="12" fill="#C9A84C"/>
+      <path d="M8 6h24a2 2 0 012 2v16a2 2 0 01-2 2H16l-6 6v-6H8a2 2 0 01-2-2V8a2 2 0 012-2z" fill="#0A1628"/>
+      <path d="M20 12l1.5 3 3.5 1-3.5 1L20 20l-1.5-3L15 16l3.5-1L20 12z" fill="#C9A84C"/>
+    </svg>
+    <h4>Vox — Civics Coach</h4>
+    <button class="close-chat" id="closeChat" aria-label="Close chat">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg bot">Hi! I'm Vox — your personal election guide. Whether you're a first-time voter or just brushing up on how democracy works, I'm here to help with no jargon and no spin. What would you like to explore today?</div>
+  </div>
+  <div class="chat-chips" id="chatChips">
+    <button class="chat-chip" aria-label="Walk me through the voter journey">Walk me through the voter journey</button>
+    <button class="chat-chip" aria-label="Explain how votes are actually counted">Explain how votes are actually counted</button>
+    <button class="chat-chip" aria-label="What's the difference between voting systems?">What's the difference between voting systems?</button>
+  </div>
+  <div class="chat-input-wrap">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Ask Vox anything..." aria-label="Type your question">
+    <button class="chat-send" id="chatSend" aria-label="Send message">→</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
