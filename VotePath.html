@@ -736,10 +736,10 @@ function initDeadlines() {
       <button class="reminder-btn">📋 Set Reminder</button>`;
       
     card.querySelector(".reminder-btn").addEventListener("click", function () {
-      navigator.clipboard.writeText(`REMINDER: ${dl.name} on ${dateStr}. Don't miss this election deadline!`);
-      this.textContent = "✓ Copied!";
-      this.classList.add("copied");
-      setTimeout(() => { this.textContent = "📋 Set Reminder"; this.classList.remove("copied"); }, 2000);
+      navigator.clipboard.writeText(`REMINDER: ${dl.name} on ${dateStr}. Don't miss this election deadline!`).then(() => {
+        this.textContent = "✓ Reminder Set!";
+        this.classList.add("copied");
+      });
     });
     grid.appendChild(card);
   });

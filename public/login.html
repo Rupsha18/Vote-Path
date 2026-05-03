@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VotePath — Sign In</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+        .auth-card {
+            background: rgba(10, 37, 64, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+        .auth-title {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--color-gold);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .auth-subtitle {
+            color: var(--color-text-muted);
+            margin-bottom: 2rem;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: left;
+        }
+        .auth-input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--color-text);
+            font-weight: 500;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--color-text);
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--color-gold);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .auth-btn {
+            background: linear-gradient(135deg, var(--color-gold) 0%, #D4AF37 100%);
+            color: var(--color-navy);
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-top: 1rem;
+        }
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+        }
+        .auth-links {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+        .auth-links a {
+            color: var(--color-gold);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        #error-msg {
+            color: #ff4b4b;
+            font-size: 0.9rem;
+            margin-top: -1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="particles-js" style="position: absolute; width: 100%; height: 100%; z-index: -1;"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to VotePath to continue your civic journey.</p>
+            
+            <form id="login-form" class="auth-form">
+                <div class="auth-input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="auth-input" placeholder="you@example.com" required>
+                </div>
+                
+                <div class="auth-input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="auth-input" placeholder="••••••••" required>
+                </div>
+                
+                <p id="error-msg"></p>
+                
+                <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+            
+            <div class="auth-links">
+                Don't have an account? <a href="signup.html">Sign Up here</a><br><br>
+                <a href="../index.html">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 40 },
+                "color": { "value": "#E5A93C" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.3 },
+                "size": { "value": 3 },
+                "line_linked": { "enable": true, "distance": 150, "color": "#E5A93C", "opacity": 0.2, "width": 1 },
+                "move": { "enable": true, "speed": 1 }
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            const btn = document.querySelector('.auth-btn');
+
+            btn.textContent = 'Signing In...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.href = '../index.html';
+                } else {
+                    errorMsg.textContent = data.message;
+                    errorMsg.style.display = 'block';
+                    btn.textContent = 'Sign In';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                errorMsg.textContent = 'An error occurred. Please try again.';
+                errorMsg.style.display = 'block';
+                btn.textContent = 'Sign In';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

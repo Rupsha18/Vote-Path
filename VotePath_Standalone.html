@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1005,9 +1005,8 @@ function initDeadlines() {
     card.querySelector(".reminder-btn").addEventListener("click", function () {
       const text = `REMINDER: ${dl.title} â€” ${dl.desc}. Don't miss this important election deadline!`;
       navigator.clipboard.writeText(text).then(() => {
-        this.textContent = "âœ“ Copied!";
+        this.textContent = "✓ Reminder Set!";
         this.classList.add("copied");
-        setTimeout(() => { this.textContent = "ðŸ“‹ Set Reminder"; this.classList.remove("copied"); }, 2000);
       });
     });
     grid.appendChild(card);

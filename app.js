@@ -247,18 +247,13 @@ async function bustMyth(idx, myth) {
   if (resp.classList.contains("visible")) return;
   skel.style.display = "block";
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: voxSystemPrompt,
-        messages: [{ role: "user", content: `Please fact-check this claim: "${myth}"` }]
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: `Please fact-check this claim: "${myth}"` })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text || "Unable to process this myth at the moment.";
+    const text = data.response || "Unable to process this myth at the moment.";
     skel.style.display = "none";
     // Determine badge
     let badge = "CONFIRMED MYTH", bc = "badge-myth";
@@ -448,9 +443,8 @@ function initDeadlines() {
     card.querySelector(".reminder-btn").addEventListener("click", function () {
       const text = `REMINDER: ${dl.title} — ${dl.desc}. Don't miss this important election deadline!`;
       navigator.clipboard.writeText(text).then(() => {
-        this.textContent = "✓ Copied!";
+        this.textContent = "✓ Reminder Set!";
         this.classList.add("copied");
-        setTimeout(() => { this.textContent = "📋 Set Reminder"; this.classList.remove("copied"); }, 2000);
       });
     });
     grid.appendChild(card);
@@ -500,17 +494,12 @@ function initChat() {
     msgs.scrollTop = msgs.scrollHeight;
 
     // API call
-    fetch("https://api.anthropic.com/v1/messages", {
+    fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: voxSystemPrompt,
-        messages: chatHistory.filter(m => m.role !== "assistant" || m !== chatHistory[0]).slice(-10)
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
     }).then(r => r.json()).then(data => {
-      const reply = data.content?.[0]?.text || "I'm having trouble connecting right now. Please try again!";
+      const reply = data.response || "I'm having trouble connecting right now. Please try again!";
       chatHistory.push({ role: "assistant", content: reply });
       
       // Basic markdown parsing for the chat
@@ -528,11 +517,26 @@ function initChat() {
         if (ci > parsedReply.length) ci = parsedReply.length;
         botDiv.innerHTML = parsedReply.substring(0, ci);
         msgs.scrollTop = msgs.scrollHeight;
-        if (ci === parsedReply.length) clearInterval(interval);
+        if (ci === parsedReply.length) {
+          clearInterval(interval);
+          isChatting = false;
+        }
       }, 10);
-    }).catch(() => {
-      botDiv.textContent = "I'm a civics tutor here to help! Unfortunately I can't connect to my knowledge base right now. Try asking about voter registration, the Electoral College, ballot measures, or how votes are counted.";
-      chatHistory.push({ role: "assistant", content: botDiv.textContent });
+    }).catch(err => {
+      const reply = "Backend API is unreachable. Please make sure you are accessing this site via http://localhost:3000 and the server is running!";
+      chatHistory.push({ role: "assistant", content: reply });
+      let errorCi = 0;
+      botDiv.innerHTML = "";
+      const interval = setInterval(() => {
+        errorCi += 3;
+        if (errorCi > reply.length) errorCi = reply.length;
+        botDiv.innerHTML = reply.substring(0, errorCi);
+        msgs.scrollTop = msgs.scrollHeight;
+        if (errorCi === reply.length) {
+          clearInterval(interval);
+          isChatting = false;
+        }
+      }, 10);
     });
   }
 

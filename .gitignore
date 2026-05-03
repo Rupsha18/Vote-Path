@@ -1,0 +1,8 @@
+node_modules/
+.env
+data/
+google-cloud-sdk/
+gcloud.zip
+python_installer.exe
+.gcloudignore
+app.yaml
