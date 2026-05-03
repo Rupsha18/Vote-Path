@@ -235,11 +235,11 @@ const requireLogin = (req, res, next) => {
   next();
 };
 
-app.get('/', requireLogin, (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/index.html', requireLogin, (req, res) => {
+app.get('/index.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
