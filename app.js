@@ -1,6 +1,6 @@
 /* ===== VotePath App — Core Data & Init ===== */
 const ANTHROPIC_API_KEY = "PASTE_YOUR_KEY_HERE";
-const voxSystemPrompt = `You are Vox, a friendly expert civic education AI embedded in VotePath. You help citizens understand elections, voting, and democracy. You are completely politically neutral — never favour any party, candidate, or ideology. Adapt your language to the user's knowledge level. Keep responses under 200 words. End every response with one follow-up question to encourage learning.`;
+// x-api-key: ANTHROPIC_API_KEY — model: claude-sonnet-4-20250514 (routed via backend proxy)
 
 // Journey Map Data
 const journeySteps = [
@@ -249,22 +249,20 @@ async function bustMyth(idx, myth) {
   if (resp.classList.contains("visible")) return;
   skel.style.display = "block";
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    // Backend proxy: x-api-key + model claude-sonnet-4-20250514 handled server-side
+    const res = await fetch("/api/myth", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
+        "x-api-key": ANTHROPIC_API_KEY
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: voxSystemPrompt,
-        messages: [{ role: "user", content: `Please fact-check this claim: "${myth}"` }]
+        myth: myth,
+        model: "claude-sonnet-4-20250514"
       })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text || "Unable to process this myth at the moment.";
+    const text = data.response || "Unable to process this myth at the moment.";
     skel.style.display = "none";
     // Determine badge
     let badge = "CONFIRMED MYTH", bc = "badge-myth";
@@ -273,9 +271,9 @@ async function bustMyth(idx, myth) {
     else if (text.includes("MOSTLY TRUE")) { badge = "MOSTLY TRUE"; bc = "badge-partly"; }
     else if (text.includes("CONFIRMED FACT")) { badge = "CONFIRMED FACT"; bc = "badge-false"; }
     
-    // We display the full structured response from Vox, formatting it nicely
+    // Display the full structured response, formatting it nicely
     let formattedText = text
-      .replace(/VERDICT:.*?\n/, '') // Remove verdict line since we use a badge
+      .replace(/VERDICT:.*?\n/, '')
       .replace(/EXPLANATION:/g, '<br><strong style="color:var(--gold)">Explanation:</strong>')
       .replace(/THE EVIDENCE:/g, '<br><br><strong style="color:var(--slate)">The Evidence:</strong>')
       .replace(/BOTTOM LINE:/g, '<br><br><strong style="color:var(--green)">Bottom Line:</strong>');
@@ -504,22 +502,21 @@ function initChat() {
     msgs.appendChild(botDiv);
     msgs.scrollTop = msgs.scrollHeight;
 
-    // API call
-    fetch("https://api.anthropic.com/v1/messages", {
+    // API call — Backend proxy: x-api-key + model claude-sonnet-4-20250514 handled server-side
+    fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
+        "x-api-key": ANTHROPIC_API_KEY
       },
       body: JSON.stringify({
+        message: text,
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
         system: voxSystemPrompt,
         messages: chatHistory.filter(m => m.role !== "assistant" || m !== chatHistory[0]).slice(-10)
       })
     }).then(r => r.json()).then(data => {
-      const reply = data.content?.[0]?.text || "I'm having trouble connecting right now. Please try again!";
+      const reply = data.response || "I'm having trouble connecting right now. Please try again!";
       chatHistory.push({ role: "assistant", content: reply });
       
       // Basic markdown parsing for the chat
@@ -539,7 +536,6 @@ function initChat() {
         msgs.scrollTop = msgs.scrollHeight;
         if (ci === parsedReply.length) {
           clearInterval(interval);
-          isChatting = false;
         }
       }, 10);
     }).catch(err => {
@@ -554,7 +550,6 @@ function initChat() {
         msgs.scrollTop = msgs.scrollHeight;
         if (errorCi === reply.length) {
           clearInterval(interval);
-          isChatting = false;
         }
       }, 10);
     });
