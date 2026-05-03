@@ -21,6 +21,12 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Disable caching for Cloud Run
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
 // Session Management
 app.use(session({
   secret: process.env.SESSION_SECRET || 'votepath-hackathon-secret-2026',
