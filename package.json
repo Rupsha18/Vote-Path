@@ -1,6 +1,5 @@
 {
   "name": "votepath",
-<<<<<<< HEAD
   "version": "3.0.0",
   "description": "VotePath — AI-powered civic education platform with Google Gemini backend",
   "main": "server.js",
@@ -17,13 +16,5 @@
     "express-session": "^1.17.3",
     "helmet": "^7.1.0",
     "uuid": "^9.0.0"
-=======
-  "version": "1.0.0",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
->>>>>>> 0545702df1d8393224c7c4f6c634b8fc3beb37db
   }
 }
