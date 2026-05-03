@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
@@ -251,3 +252,10 @@ app.use(express.static(path.join(__dirname, '')));
 app.listen(PORT, () => {
   console.log(`✅ VotePath Backend running on http://localhost:${PORT}`);
 });
+=======
+const express = require('express');
+const app = express();
+app.use(express.static(__dirname));
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
+app.listen(process.env.PORT || 8080);
+>>>>>>> 0545702df1d8393224c7c4f6c634b8fc3beb37db
