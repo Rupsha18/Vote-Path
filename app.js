@@ -255,12 +255,14 @@ async function bustMyth(idx, myth) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        myth: myth,
-        model: "claude-sonnet-4-20250514"
+        model: "claude-3-5-sonnet-20240620",
+        max_tokens: 1024,
+        system: MYTH_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: `Fact-check this claim: "${myth}"` }]
       })
     });
     const data = await res.json();
-    const text = data.response || "Unable to process this myth at the moment.";
+    const text = data.content?.[0]?.text || "Unable to process this myth at the moment.";
     skel.style.display = "none";
     // Determine badge
     let badge = "CONFIRMED MYTH", bc = "badge-myth";
@@ -507,13 +509,13 @@ function initChat() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: text,
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-5-sonnet-20240620",
+        max_tokens: 1024,
         system: voxSystemPrompt,
         messages: chatHistory.filter(m => m.role !== "assistant" || m !== chatHistory[0]).slice(-10)
       })
     }).then(r => r.json()).then(data => {
-      const reply = data.response || "I'm having trouble connecting right now. Please try again!";
+      const reply = data.content?.[0]?.text || "I'm having trouble connecting right now. Please try again!";
       chatHistory.push({ role: "assistant", content: reply });
       
       // Basic markdown parsing for the chat
