@@ -252,8 +252,7 @@ async function bustMyth(idx, myth) {
     const res = await fetch("/api/myth", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         myth: myth,
@@ -505,8 +504,7 @@ function initChat() {
     fetch("/api/chat", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         message: text,

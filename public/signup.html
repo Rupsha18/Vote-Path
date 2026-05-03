@@ -185,6 +185,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
+                    localStorage.setItem('token', data.token);
                     window.location.href = '/';
                 } else {
                     errorMsg.textContent = data.message;
