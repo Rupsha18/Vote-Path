@@ -1,6 +1,5 @@
 /* ===== VotePath App — Core Data & Init ===== */
-const ANTHROPIC_API_KEY = "PASTE_YOUR_KEY_HERE";
-// x-api-key: ANTHROPIC_API_KEY — model: claude-sonnet-4-20250514 (routed via backend proxy)
+// API calls routed via backend proxy
 
 // Journey Map Data
 const journeySteps = [

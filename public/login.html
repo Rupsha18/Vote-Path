@@ -126,7 +126,7 @@
             
             <div class="auth-links">
                 Don't have an account? <a href="signup.html">Sign Up here</a><br><br>
-                <a href="../index.html">← Back to Home</a>
+                <a href="/">← Back to Home</a>
             </div>
         </div>
     </div>
@@ -148,10 +148,18 @@
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const btn = document.querySelector('.auth-btn');
+            
+            errorMsg.style.display = 'none';
+
+            if (!email || !password) {
+                errorMsg.textContent = 'Please fill out all fields.';
+                errorMsg.style.display = 'block';
+                return;
+            }
 
             btn.textContent = 'Signing In...';
             btn.disabled = true;
@@ -166,7 +174,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    window.location.href = '../index.html';
+                    window.location.href = '/';
                 } else {
                     errorMsg.textContent = data.message;
                     errorMsg.style.display = 'block';
@@ -174,7 +182,7 @@
                     btn.disabled = false;
                 }
             } catch (err) {
-                errorMsg.textContent = 'An error occurred. Please try again.';
+                errorMsg.textContent = 'A network error occurred. Please try again.';
                 errorMsg.style.display = 'block';
                 btn.textContent = 'Sign In';
                 btn.disabled = false;

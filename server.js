@@ -5,7 +5,10 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const helmet = require('helmet');
 const compression = require('compression');
-const fs = require('fs');
+const minify = require('express-minify');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+const { Firestore } = require('@google-cloud/firestore');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -18,6 +21,7 @@ app.use(helmet({
   contentSecurityPolicy: false // Disabled for simplicity in static hosting environments
 }));
 app.use(compression());
+app.use(minify()); // Minify JS and CSS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -35,98 +39,128 @@ app.use(session({
   cookie: { secure: false, maxAge: 1000 * 60 * 60 * 24 } // 24 hours
 }));
 
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+app.use('/api/', apiLimiter);
+
 // Initialize Google Gemini API
 let genAI;
 if (process.env.GEMINI_API_KEY) {
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 }
 
-// Database Setup (JSON File Based)
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+// Database Setup (Firestore)
+const firestore = new Firestore();
 
-const usersFile = path.join(dataDir, 'users.json');
-const pollsFile = path.join(dataDir, 'polls.json');
-
-// Helper functions for DB
-const readDB = (file) => {
-  if (!fs.existsSync(file)) return [];
-  const data = fs.readFileSync(file, 'utf8');
-  return data ? JSON.parse(data) : [];
-};
-
-const writeDB = (file, data) => {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-};
-
-// Initialize default polls if none exist
-if (!fs.existsSync(pollsFile)) {
-  const defaultPolls = [
-    {
-      id: uuidv4(),
-      question: "Which voting method do you prefer for local elections?",
-      options: [
-        { id: 'opt1', text: 'First-Past-The-Post', votes: 12 },
-        { id: 'opt2', text: 'Ranked Choice Voting', votes: 45 },
-        { id: 'opt3', text: 'Proportional Representation', votes: 23 }
-      ],
-      active: true,
-      createdAt: new Date().toISOString()
+// Helper functions for DB (Firestore)
+const initDB = async () => {
+  try {
+    const pollsSnapshot = await firestore.collection('polls').limit(1).get();
+    if (pollsSnapshot.empty) {
+      const defaultPoll = {
+        question: "Which voting method do you prefer for local elections?",
+        options: [
+          { id: 'opt1', text: 'First-Past-The-Post', votes: 12 },
+          { id: 'opt2', text: 'Ranked Choice Voting', votes: 45 },
+          { id: 'opt3', text: 'Proportional Representation', votes: 23 }
+        ],
+        active: true,
+        createdAt: new Date().toISOString()
+      };
+      await firestore.collection('polls').doc(uuidv4()).set(defaultPoll);
     }
-  ];
-  writeDB(pollsFile, defaultPolls);
-}
-
-// Ensure users file exists
-if (!fs.existsSync(usersFile)) {
-  writeDB(usersFile, []);
-}
-
+  } catch (err) {
+    console.error("Firestore initialization error:", err.message);
+  }
+};
+initDB();
 
 // --- API ROUTES ---
 
 // Authentication: Sign Up
-app.post('/api/signup', async (req, res) => {
-  const { email, password, name } = req.body;
-  
-  if (!email || !password || !name) {
-    return res.status(400).json({ success: false, message: 'All fields are required' });
-  }
+app.post('/api/signup', 
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+    body('name').trim().notEmpty().withMessage('Name is required').escape()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: errors.array()[0].msg });
+    }
 
-  const users = readDB(usersFile);
-  const existingUser = users.find(u => u.email === email);
-  
-  if (existingUser) {
-    return res.status(400).json({ success: false, message: 'User already exists' });
-  }
+    const { email, password, name } = req.body;
+    
+    try {
+      const usersRef = firestore.collection('users');
+      const snapshot = await usersRef.where('email', '==', email).get();
+      
+      if (!snapshot.empty) {
+        return res.status(400).json({ success: false, message: 'User already exists' });
+      }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = { id: uuidv4(), email, name, password: hashedPassword };
-  
-  users.push(newUser);
-  writeDB(usersFile, users);
-  
-  req.session.userId = newUser.id;
-  res.json({ success: true, message: 'Account created successfully' });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUserId = uuidv4();
+      
+      await usersRef.doc(newUserId).set({
+        email,
+        name,
+        password: hashedPassword,
+        createdAt: new Date().toISOString()
+      });
+      
+      req.session.userId = newUserId;
+      res.json({ success: true, message: 'Account created successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Server error during signup' });
+    }
 });
 
 // Authentication: Log In
-app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password required' });
-  }
+app.post('/api/login',
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password is required')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: errors.array()[0].msg });
+    }
 
-  const users = readDB(usersFile);
-  const user = users.find(u => u.email === email);
-  
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password' });
-  }
+    const { email, password } = req.body;
+    
+    try {
+      const usersRef = firestore.collection('users');
+      const snapshot = await usersRef.where('email', '==', email).get();
+      
+      if (snapshot.empty) {
+        return res.status(401).json({ success: false, message: 'Invalid email or password' });
+      }
 
-  req.session.userId = user.id;
-  res.json({ success: true, message: 'Logged in successfully' });
+      let user = null;
+      let userId = null;
+      snapshot.forEach(doc => {
+        user = doc.data();
+        userId = doc.id;
+      });
+      
+      if (!(await bcrypt.compare(password, user.password))) {
+        return res.status(401).json({ success: false, message: 'Invalid email or password' });
+      }
+
+      req.session.userId = userId;
+      res.json({ success: true, message: 'Logged in successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Server error during login' });
+    }
 });
 
 // Authentication: Log Out
@@ -136,45 +170,70 @@ app.post('/api/logout', (req, res) => {
 });
 
 // Get Current User Status
-app.get('/api/user', (req, res) => {
+app.get('/api/user', async (req, res) => {
   if (!req.session.userId) return res.json({ loggedIn: false });
-  const users = readDB(usersFile);
-  const user = users.find(u => u.id === req.session.userId);
   
-  if (!user) return res.json({ loggedIn: false });
-  
-  res.json({ 
-    loggedIn: true, 
-    user: { id: user.id, email: user.email, name: user.name }
-  });
+  try {
+    const userDoc = await firestore.collection('users').doc(req.session.userId).get();
+    if (!userDoc.exists) return res.json({ loggedIn: false });
+    
+    const user = userDoc.data();
+    res.json({ 
+      loggedIn: true, 
+      user: { id: userDoc.id, email: user.email, name: user.name }
+    });
+  } catch (err) {
+    res.json({ loggedIn: false });
+  }
 });
 
 // Polls: Get active polls
-app.get('/api/polls', (req, res) => {
-  const polls = readDB(pollsFile);
-  res.json({ success: true, polls });
+app.get('/api/polls', async (req, res) => {
+  try {
+    const snapshot = await firestore.collection('polls').get();
+    const polls = [];
+    snapshot.forEach(doc => {
+      polls.push({ id: doc.id, ...doc.data() });
+    });
+    res.json({ success: true, polls });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to load polls' });
+  }
 });
 
 // Polls: Submit a vote
-app.post('/api/vote', (req, res) => {
+app.post('/api/vote', async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ success: false, message: 'You must be logged in to vote.' });
   }
 
   const { pollId, optionId } = req.body;
-  const polls = readDB(pollsFile);
+  if (!pollId || !optionId) {
+    return res.status(400).json({ success: false, message: 'Invalid vote data.' });
+  }
   
-  const pollIndex = polls.findIndex(p => p.id === pollId);
-  if (pollIndex === -1) return res.status(404).json({ success: false, message: 'Poll not found.' });
-  if (!polls[pollIndex].active) return res.status(400).json({ success: false, message: 'Poll is closed.' });
-
-  const optionIndex = polls[pollIndex].options.findIndex(o => o.id === optionId);
-  if (optionIndex === -1) return res.status(404).json({ success: false, message: 'Option not found.' });
-
-  polls[pollIndex].options[optionIndex].votes += 1;
-  writeDB(pollsFile, polls);
-
-  res.json({ success: true, message: 'Vote recorded!', poll: polls[pollIndex] });
+  try {
+    const pollRef = firestore.collection('polls').doc(pollId);
+    
+    await firestore.runTransaction(async (t) => {
+      const doc = await t.get(pollRef);
+      if (!doc.exists) throw new Error('Poll not found');
+      
+      const poll = doc.data();
+      if (!poll.active) throw new Error('Poll is closed');
+      
+      const optionIndex = poll.options.findIndex(o => o.id === optionId);
+      if (optionIndex === -1) throw new Error('Option not found');
+      
+      poll.options[optionIndex].votes += 1;
+      t.update(pollRef, { options: poll.options });
+    });
+    
+    const updatedDoc = await pollRef.get();
+    res.json({ success: true, message: 'Vote recorded!', poll: { id: updatedDoc.id, ...updatedDoc.data() } });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
 });
 
 // ========================================
@@ -259,50 +318,66 @@ const generateMockMyth = (myth) => {
 };
 
 // Vox AI Chatbot Endpoint
-app.post('/api/chat', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ success: false, message: 'Message is required' });
+app.post('/api/chat',
+  [
+    body('message').trim().notEmpty().withMessage('Message is required').escape()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: errors.array()[0].msg });
+    }
+    
+    const { message } = req.body;
 
-  // If API key is set, try to use real Gemini AI
-  if (genAI) {
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const prompt = `${VOX_SYSTEM_PROMPT}\n\nUser query: "${message}"`;
-      
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return res.json({ success: true, response: response.text() });
-    } catch (error) {
-      console.warn("Gemini API Error (falling back to mock):", error.message);
+    // If API key is set, try to use real Gemini AI
+    if (genAI) {
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const prompt = `${VOX_SYSTEM_PROMPT}\n\nUser query: "${message}"`;
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return res.json({ success: true, response: response.text() });
+      } catch (error) {
+        console.warn("Gemini API Error (falling back to mock):", error.message);
+        return res.json({ success: true, response: generateMockChat(message) });
+      }
+    } else {
+      // Immediate fallback if no API key is provided
       return res.json({ success: true, response: generateMockChat(message) });
     }
-  } else {
-    // Immediate fallback if no API key is provided
-    return res.json({ success: true, response: generateMockChat(message) });
-  }
 });
 
 // Myth Buster Endpoint — Dedicated structured fact-checking
-app.post('/api/myth', async (req, res) => {
-  const { myth } = req.body;
-  if (!myth) return res.status(400).json({ success: false, message: 'Myth text is required' });
+app.post('/api/myth',
+  [
+    body('myth').trim().notEmpty().withMessage('Myth text is required').escape()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: errors.array()[0].msg });
+    }
+    
+    const { myth } = req.body;
 
-  // If API key is set, try to use real Gemini AI
-  if (genAI) {
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const prompt = `${MYTH_SYSTEM_PROMPT}\n\nFact-check this claim: "${myth}"`;
-      
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return res.json({ success: true, response: response.text() });
-    } catch (error) {
-      console.warn("Gemini Myth API Error (falling back to mock):", error.message);
+    // If API key is set, try to use real Gemini AI
+    if (genAI) {
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const prompt = `${MYTH_SYSTEM_PROMPT}\n\nFact-check this claim: "${myth}"`;
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return res.json({ success: true, response: response.text() });
+      } catch (error) {
+        console.warn("Gemini Myth API Error (falling back to mock):", error.message);
+        return res.json({ success: true, response: generateMockMyth(myth) });
+      }
+    } else {
       return res.json({ success: true, response: generateMockMyth(myth) });
     }
-  } else {
-    return res.json({ success: true, response: generateMockMyth(myth) });
-  }
 });
 
 // Serve index.html without login requirement (so "Back to Home" works)

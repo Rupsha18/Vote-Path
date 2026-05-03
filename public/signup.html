@@ -131,7 +131,7 @@
             
             <div class="auth-links">
                 Already have an account? <a href="login.html">Sign In here</a><br><br>
-                <a href="../index.html">← Back to Home</a>
+                <a href="/">← Back to Home</a>
             </div>
         </div>
     </div>
@@ -153,11 +153,24 @@
 
         document.getElementById('signup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('error-msg');
             const btn = document.querySelector('.auth-btn');
+
+            errorMsg.style.display = 'none';
+
+            if (!name || !email || !password) {
+                errorMsg.textContent = 'Please fill out all fields.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            if (password.length < 6) {
+                errorMsg.textContent = 'Password must be at least 6 characters.';
+                errorMsg.style.display = 'block';
+                return;
+            }
 
             btn.textContent = 'Creating Account...';
             btn.disabled = true;
@@ -172,7 +185,7 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    window.location.href = '../index.html';
+                    window.location.href = '/';
                 } else {
                     errorMsg.textContent = data.message;
                     errorMsg.style.display = 'block';
@@ -180,7 +193,7 @@
                     btn.disabled = false;
                 }
             } catch (err) {
-                errorMsg.textContent = 'An error occurred. Please try again.';
+                errorMsg.textContent = 'A network error occurred. Please try again.';
                 errorMsg.style.display = 'block';
                 btn.textContent = 'Create Account';
                 btn.disabled = false;
