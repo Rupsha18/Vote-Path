@@ -807,7 +807,7 @@ async function bustMyth(idx, myth) {
     // Backend proxy: x-api-key + model claude-sonnet-4-20250514 handled server-side
     const res = await fetch("/api/myth", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": "backend-proxy" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         myth: myth,
         model: "claude-sonnet-4-20250514"
@@ -1057,7 +1057,7 @@ function initChat() {
     // API call — Backend proxy: x-api-key + model claude-sonnet-4-20250514 handled server-side
     fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": "backend-proxy" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: text,
         model: "claude-sonnet-4-20250514",
